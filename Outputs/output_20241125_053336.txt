@@ -1,0 +1,155 @@
+```python
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+# Function to compute the escape time for a given complex number c
+def mandelbrot(c, max_iter):
+    z = 0
+    n = 0
+    while abs(z) <= 2 and n < max_iter:
+        z = z*z + c
+        n += 1
+    return n
+
+# Function to create the Mandelbrot set image
+def create_mandelbrot(xmin, xmax, ymin, ymax, width, height, max_iter):
+    r1 = np.linspace(xmin, xmax, width)
+    r2 = np.linspace(ymin, ymax, height)
+    n3 = np.empty((width,height))
+    for i in range(width):
+        for j in range(height):
+            n3[i,j] = mandelbrot(r1[i] + 1j*r2[j], max_iter)
+    return n3
+
+# Main Tkinter application class
+class MandelbrotApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Mandelbrot Set")
+        self.canvas = tk.Canvas(root, width=800, height=600)
+        self.canvas.pack()
+        self.create_buttons()
+        self.zoom_level = 1
+        self.xmin, self.xmax = -2.5, 1.5
+        self.ymin, self.ymax = -1.5, 1.5
+        self.update_mandelbrot()
+
+    def create_buttons(self):
+        button_frame = tk.Frame(self.root)
+        button_frame.pack()
+        buttons = ["Zoom In", "Zoom Out", "Move Left", "Move Right", "Move Up", "Move Down", "Save Image"]
+        commands = [self.zoom_in, self.zoom_out, self.move_left, self.move_right, self.move_up, self.move_down, self.save_image]
+        for button_text, command in zip(buttons, commands):
+            tk.Button(button_frame, text=button_text, command=command).pack(side=tk.LEFT)
+
+    def update_mandelbrot(self):
+        mandelbrot_set = create_mandelbrot(self.xmin, self.xmax, self.ymin, self.ymax, 800, 600, max_iter=256)
+        img = Image.new('RGB', (800, 600))
+        pixels = img.load()
+        norm = mcolors.Normalize(vmin=0, vmax=256)
+        for i in range(800):
+            for j in range(600):
+                color = plt.cm.viridis(norm(mandelbrot_set[i,j]))
+                pixels[i,j] = tuple(int(c * 255) for c in color[:3])
+        self.imgTk = ImageTk.PhotoImage(img)
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.imgTk)
+
+    def zoom_in(self):
+        self.zoom_level *= 1.5
+        self.update_viewport()
+
+    def zoom_out(self):
+        self.zoom_level /= 1.5
+        self.update_viewport()
+
+    def move_left(self):
+        self.xmin -= (self.xmax - self.xmin) * 0.2
+        self.xmax -= (self.xmax - self.xmin) * 0.2
+        self.update_viewport()
+
+    def move_right(self):
+        self.xmin += (self.xmax - self.xmin) * 0.2
+        self.xmax += (self.xmax - self.xmin) * 0.2
+        self.update_viewport()
+
+    def move_up(self):
+        self.ymin -= (self.ymax - self.ymin) * 0.2
+        self.ymax -= (self.ymax - self.ymin) * 0.2
+        self.update_viewport()
+
+    def move_down(self):
+        self.ymin += (self.ymax - self.ymin) * 0.2
+        self.ymax += (self.ymax - self.ymin) * 0.2
+        self.update_viewport()
+
+    def update_viewport(self):
+        width = (self.xmax - self.xmin) / self.zoom_level
+        height = (self.ymax - self.ymin) / self.zoom_level
+        center_x = (self.xmax + self.xmin) / 2
+        center_y = (self.ymax + self.ymin) / 2
+        self.xmin = center_x - width / 2
+        self.xmax = center_x + width / 2
+        self.ymin = center_y - height / 2
+        self.ymax = center_y + height / 2
+        self.update_mandelbrot()
+
+    def save_image(self):
+        file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")])
+        if file_path:
+            img = ImageTk.getimage(self.imgTk)
+            img.save(file_path)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MandelbrotApp(root)
+    root.mainloop()
+```
+
+### Explanation of the Code:
+
+1. **Mandelbrot Calculation:**
+   - The `mandelbrot` function computes the escape time for a given complex number \( c \).
+   - The `create_mandelbrot` function generates the Mandelbrot set image by iterating over each pixel and computing its escape time.
+
+2. **Tkinter GUI Setup:**
+   - The `MandelbrotApp` class sets up the main Tkinter window, canvas, and buttons for zooming, panning, and saving the image.
+   - The `update_mandelbrot` method updates the Mandelbrot set display based on the current viewport.
+
+3. **Zooming and Panning:**
+   - Methods like `zoom_in`, `zoom_out`, `move_left`, etc., adjust the viewport by changing the range of complex numbers being evaluated.
+   - The `update_viewport` method recalculates the viewport based on the current zoom level and center point.
+
+4. **Saving the Image:**
+   - The `save_image` method uses `filedialog` to allow the user to choose a file path and save the current image as a PNG file.
+
+### Features for Improvement:
+
+1. **Smooth Zooming and Panning:**
+   - Implement smooth transitions using animation techniques.
+
+2. **Real-time Updates:**
+   - Allow real-time updates by dynamically updating the canvas as the user zooms or pans.
+
+3. **User Input for Zoom Level:**
+   - Provide a slider or text input for users to specify the zoom level precisely.
+
+4. **Color Scheme Options:**
+   - Allow users to choose from different color schemes or palettes.
+
+5. **Mouse Interaction:**
+   - Enable mouse interactions for dragging to pan and scrolling to zoom.
+
+6. **Coordinate Display:**
+   - Show the current coordinates of the viewport on the GUI.
+
+7. **Performance Optimization:**
+   - Use multiprocessing or multithreading to speed up Mandelbrot set calculations.
+
+8. **History and Undo/Redo:**
+   - Implement a history feature for undoing and redoing zoom and pan actions.
+
+By integrating these features, you can create a robust and user-friendly application for exploring the Mandelbrot set with Tkinter in Python.
